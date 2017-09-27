@@ -1,0 +1,321 @@
+---
+title: 'Maize and Beans Yield Response to Fertilizer Types (A and B) in Bugarama Region  '
+author: "mailto:jacques.ntezimana@oneacrefund.org"
+date: "August 2017"
+output:
+  html_document:
+    code_folding: hide
+    number_sections: yes
+    theme: flatly
+    toc: yes
+    toc_depth: 6
+    toc_float: yes
+  pdf_document:
+    latex_engine: xelatex
+    toc: yes
+    toc_depth: 6
+  word_document:
+    toc: yes
+    toc_depth: '6'
+subtitle: Bugarama RCBD Trial
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# load libraries
+library(data.table)
+library(ggplot2)
+library(reshape2)
+library(plyr)
+library(stats)
+library(lattice)
+library(gridExtra)
+library(pwr)
+library(rmarkdown)
+library(car)
+library(knitr)
+library(doBy)
+library(rcompanion)
+
+# define function that turns decimal percentages into pretty formats
+format_pct <- function(num) {round(num*100, digits = 2)}
+
+# define function to adjust table widths
+html_table_width <- function(kable_output, width){
+  width_html <- paste0(paste0('<col width="', width, '">'), collapse = "\n")
+  sub("<table>", paste0("<table>\n", width_html), kable_output)
+}
+
+
+```
+
+# Summary 
+
+## Overview 
+
+For profitable production, Beans and Maize require adequate fertilizer application. Applying the right fertilizer at the right rate and at the right time is crucial for a successful crop. The aim of this report is  to determine which type  of fertilizer could lead to the highest Yield  for Maize and/or Beans in the Bugarama region. Maize and Beans Fertilizer application field experiment was carried out on 1000 farmers (i.e 500 farmers for each grade of fertilizer).
+
+# Trial Hypothesis 
+
+H1:The type B fertilizer  will produce significantly higher Maize yields than type A fertilizer. 
+
+H2:The type B fertilizer  will produce significantly higher Beans yields than type A fertilizer. 
+
+# Main Take Away
+
+## Summary of Results 
+
+```{r table-simple, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+
+library(pander)
+panderOptions('table.split.table', Inf)
+set.caption("
+            * H1:Did Fertilzer B produce significance high Maize yields(kg/acre) than Fertilizer A?                                    
+            * H2: Did Fertilizer B produce significance high Beans yields (kg/acre) than Fertilizer A?")
+
+my.data <- " Results Table
+
+Crops	  |Type   |Means|Median|Stand.Dev|1st-3rd.Quartiles|Power|Test         |Significance
+--------|-------|-----|------|---------|-----------------|-----|------------ |----------------
+Maize 	|Fert.A |  699|   700|         |  500-900	       |99%	 |Wilcoxon test|Significant 
+	      |Fert.B	|  773|   763|         |  564-961	       |	   |             |
+--------|-------|------------|---------|-----------------|-----|------------ |----------------     
+Beans 	|Fert.A |   99|      |     20.5|                 |11%	 |Welch test   |Not Significant  
+	      |Fert.B	|  101|      |     19.8|	               |     |             |          
+--------|-------|------------|---------|-----------------|-----|------------ |----------------"
+df <- read.delim(textConnection(my.data),header=FALSE,sep="|",strip.white=TRUE,stringsAsFactors=FALSE)
+names(df) <- unname(as.list(df[1,])) # put headers on
+pander(df, style = 'rmarkdown')
+
+```
+
++ Results have shown that Fertilizer B had statistically significant higher Maize yields than Fertilizer A .Also  with power calculation ,the findings have shown that the sample size used for this study was appropriate at 98% certainly to make correct inference that the sample groups of data are different .
+
++ While the Beans results revealed that there is no difference in the mean yields of beans between fertilizer A and B .These findings are not reliable because of low statistical power of 0.106 . It means that the chance of discovering  effects that are genuinely true is low .
+
+## Data Quality Disclaimer
+
+For the beans yield, box-plot revealed some information on the strange data points that there're large numbers of kgs that max out near 160 for both fertilizer types and also has some outlier points at the low end. However, we did not consider to eliminate those points from the data because they were quite close to the boxplot lines, this means they might not actually be outliers. In addition, there were no further verification done in relation to the quality, operability or accuracy of the data.
+
+# Recommendation 
+
+* We therefore conclude that we should recommend to farmers that they adopt Fertilizer B over Fertilizer A for Maize due to higher significance production . 
+
+* For Beans crop, fertilizer B had yield(kgs/acre) which were much higher than the Fertilizer A yield(kgs/acre), but the results were not statistically significant; this is the reason why no types of fertilizer is highlighted for that crop. Also, it doesn't make sense to use the same sample size for both Beans and Maize to detect the same effect since they do not have the same capacity of nutrient fixation. 
+
+* We ought to re-do Beans fertilizer trial due to low power. Given this risk, this study demonstrated no difference between two fertilizers. So, we can't be confident in concluding that no difference exists.
+
+* Finally, we also recommend the researcher to run power analysis to determine the minimum sample size required to meet power level and minimum detectable effect set for the study.
+
+# Analysis 
+
+```{r assignment}
+# create directory 
+
+wd <- "C:/Users/Admin/Desktop/r_directory/AInnovations/AMP"
+dd <- paste(wd, "data", sep="/")
+od <- paste(wd, "output", sep="/")
+
+## call data 
+c <- read.csv(paste(dd, "Homework_data.csv", sep = "/"), header = TRUE, stringsAsFactors = FALSE) ## cases 
+
+```
+
+## Diagonostic testing 
+
+### Data exploration by box-plots
+
+```{r boxplots}
+# data  visualization for outlier check
+
+g1 <- ggplot(c, aes(x=Group, y=Maize.yield.per.acre, fill=Group)) + geom_boxplot() +
+    guides(fill=FALSE) + ylab("Maize yields kg per acre")+ggtitle("Maize Fertilizer types application")
+
+g2 <- ggplot(c, aes(x=Group, y=Beans.yield.per.acre, fill=Group)) + geom_boxplot() +
+    guides(fill=FALSE) + ylab("Beans  yields kg per acre")+ggtitle("Beans Fertilizer types application")
+
+grid.arrange(g1, g2, ncol=2) 
+
+```
+
+Typically, box-plot allow us to see the distribution of a variable data and whether they contain outliers or not.  Indeed, those plotted box-lots  are helping us see the performance of Fert.A and Fert.B on Maize and Beans Yields(kg) per Acre.Results revealed that Fert.B has good performance compared to Fert.A for both Maize and Beans yields. But in this particular case, box plots have helped to investigate something specific. It reveals some information on the outliers for beans yields that there're large numbers  of kg  that max out near 160 for both fertilizer types and also has some outlier points at the low end . 
+
+Since some of the Beans data are unusual compared to the others which can have strong influence on the results, we should try to identify the cause of the unusual nature points. we can however choose to correct any data entry or measurement error, then consider removing data that are associated with special causes and repeating analysis.
+
+### Test of normality of data 
+#### QQ-plot
+
+```{r QQ-plot}
+# QQ plot  all data ( both group togetheer )
+
+par(mfrow = c(1, 2))
+qqnorm(c$Maize.yield.per.acre, main="QQ plot Maize Yield ")
+qqline(c$Maize.yield.per.acre)
+
+qqnorm(c$Beans.yield.per.acre, main="QQ plot Beans Yield")
+qqline(c$Beans.yield.per.acre)
+
+
+## QQ-plots for subgroup 
+## create subsets
+
+c1 <- subset(c,Group=="Fert.A", select=ID:Group)
+c2 <- subset(c,Group=="Fert.B", select=ID:Group)
+
+### maize
+par(mfrow = c(1, 2))
+qqnorm(c1$Maize.yield.per.acre, main="QQ plot Maize Yield  Fert.A")
+qqline(c1$Maize.yield.per.acre)
+
+qqnorm(c2$Maize.yield.per.acre, main="QQ plot Maize Yield  Fert.B")
+qqline(c2$Maize.yield.per.acre)
+
+### Beans
+par(mfrow = c(1, 2))
+qqnorm(c1$Beans.yield.per.acre, main="QQ plot Beans Yield  Fert.A")
+qqline(c1$Beans.yield.per.acre)
+
+qqnorm(c2$Beans.yield.per.acre, main="QQ plot Beans Yield  Fert.B")
+qqline(c2$Beans.yield.per.acre)
+
+
+```
+
+As QQ-plot plots a perfect normal distribution as a solid diagonal line and then our actual data as markers (circles) on top of that. Therefore, the plotted  entire data(Fert A&B) for beans yield shows some normal distribution while Maize yield data shows non-normal distribution trend. 
+
+However the plots look well when data are plotted in subgroups. The QQ-plots for Beans show that both Fert.A and Fert.B data follow a normal distribution while examining the data in plot of Maize yield,Fertilizer A has some larger deviation(its actual points deviate from the normal line ) than Fert.B . 
+
+How do we be sure with this discrepancy? Le's run Shapiro test to see whether those systematic deviations from the normal line exist or not .
+
+#### Shapiro-Wilk normality test
+
+```{r test of normality}
+
+## Shapiro test  
+## Just to remember that c is  a dataframe for all groups data, c1 is subset for Fert.A only ,c2 IS for Fer.B 
+
+shapiro.test(c$Maize.yield.per.acre) 
+shapiro.test(c$Beans.yield.per.acre)
+
+shapiro.test(c1$Maize.yield.per.acre) 
+shapiro.test(c2$Maize.yield.per.acre) 
+
+shapiro.test(c1$Beans.yield.per.acre)
+shapiro.test(c2$Beans.yield.per.acre)
+
+```
+
+Our Maize yields distribution has a Shapiro test P-value < 1%  for all  Fertilizer types A&B tested separately and when tested both together. This is strongly suggests  that our Maize data is non- normal. While  Beans yields data,  Shapiro test P-Values > 1%  this indicates that data are normal. 
+
+## Test of Significance 
+
+Since the results from Shapiro test suggests the normality for Beans Data and non-normal for Maize data, it is recommended to use different test statistic.  Non-parametric test is recommended for non-normal data, vs parametric test when data are normal. Therefore ,to test the mean difference between Fert.A  and fert B for Beans data which are  normal , Welch Test( An improvement on the T-test, which is more robust to unequal variances)  is recommended while the Wilcoxon Test is recommended for Maize Yield data that  are not normal.
+
+### Welch Test for Beans Yield Data
+
+
+```{r test of mean difference }
+
+## Welch Test 
+t.test(Beans.yield.per.acre~Group, alternative = "two.sided", var.equal = FALSE, data=c)$p.value #perform the Welch test and store p-value
+
+```
+
+No significance difference mean yield found  between two types of fertilizer applied to Beans ( Welch Test p-values>5%)
+
+### Wilcoxon Test  for  Maize Yield Data
+
+```{r test of mean difference wilcoxon }
+
+## Wilcoxon Test 
+
+wilcox.test(Maize.yield.per.acre~Group,paired=FALSE, correct=TRUE,data=c)
+
+```
+
+We found a statistically  significance  mean yield difference between two types of fertilizer applied to Maize ( Wilcoxon Test p-values<5%)
+
+## Power Analysis  
+
+Our results have shown no difference in mean yield for Beans among  Fertilizer A and B ( Welch test P-values=0.165 > 5%)  and found to have statistically significant difference for Maize (Wilcoxon Test p-value = 4.565e-05 <5%) . However , there is a need of performing  power calculations to know whether our findings are reliable or not. 
+
+### Power calculation 
+
+It is important that we use the correct power calculation in much the same way it is important we use the right hypothesis test.A low power will mean our results are less reliable and we may be making false conclusions about interventions.The required sample size to detect the effect of interest  will need to produce the power of 0.8 and above . Power calculations are depending on the data distribution .Therefore  with normal data ,* pwr.2p2n.test* will be used while *Mcpower* will be used for Non normal data . 
+
+Also since sample size, power and effect size are all part of the same equation and all related, We will first need to calculate effect size which is difference in means between samples divided by the standard deviation of the samples  using *Cohen's D equation* .
+
+#### Power Calculation  for normal ( Beans Yield )
+
+```{r normal}
+
+# Generate effect size using Cohen D equation  (Note that c1 is dataframe that contain Data for Fert.A while c2 contain data for Fert.B)
+#Don't forget to re run the command that generate c1 and c2 in above codes
+
+cohen_d <- function(d1,d2) {  
+  m1 <- mean(d1, na.rm=TRUE)
+  m2 <- mean(d2, na.rm=TRUE)
+  s1 <- sd(d1, na.rm=TRUE)
+  s2 <- sd(d2, na.rm=TRUE)
+  spo <- sqrt((s1**2 + s2**2)/2)
+  d <- (m1 - m2)/spo
+  effsi <- d / sqrt((d**2)+4)
+  ret <- list("d" = d, "effectsi" = effsi)
+  return(ret)  } 
+
+##get effect size and call it like this:
+ 
+vals<- cohen_d(c1$Beans.yield.per.acre, c2$Beans.yield.per.acre)
+ 
+pwr.2p2n.test(h = vals$effectsi , n1 =length(c1$Group), n2=length(c2$Group) , sig.level = 0.05, power = NULL)
+
+```
+
+With the result calculated above , a low statistical power of 0.106 was obtained , means that the chance of discovering effects that are genuinely true is low . Therefore ,it can be said with only 11% of certainly that there is no really a statistically significant difference between the beans'mean yields for two types of fertilizers and these finding are unreliable. 
+
+#### Power calculation  for Non-normal ( Maize Yield )
+
+```{r nonnormal}
+
+MCpower = function(sample1, sample2, size) {
+  reps = 1000
+    results  <- sapply(1:reps, function(r) {
+        resample1 <- sample(sample1, size=size, replace=TRUE) 
+        resample2 <- sample(sample2, size=size, replace=TRUE) 
+        test <- wilcox.test(resample1, resample2, alternative="two.sided",paired=FALSE, correct=TRUE)
+        test$p.value
+    })
+    sum(results<0.05)/reps
+}
+
+ MCpower(c1$Maize.yield.per.acre, c2$Maize.yield.per.acre, 500)
+
+```
+
+# Summary Stats  for Reporting 
+
+```{r summary2 }
+
+## for normal data , report means ,sd,confidence Interval 
+
+table_s <- summaryBy(Beans.yield.per.acre~Group,data=c,FUN=c(mean,sd))
+kable(table_s, format="markdown", align="c", digits=2)
+## for Non normal data ,report Median and ( 1st and 3rd quartiles) 
+
+setnames(c, old = c('Maize.yield.per.acre'),new = c('MaizeYield')) ## keep variable name short
+tab <- summaryBy(MaizeYield~Group,data=c,FUN=summary)
+sum_table <- as.data.frame(tab)
+names(sum_table) <- c("Fertilizer type", "Min", "1st.Q", "Median","Mean" ,"3rd.Q","MAX")
+kable(sum_table, format="markdown", align="c", digits=2)
+
+
+```
+
+
+
+
+
+
+
+
+
